@@ -156,19 +156,20 @@ impl AsciiEncoder for SevenEncoder {
                     counter+=1;
                 }
             }
-            if counter > 0 {
-                result.push_str(&format!("{:02X}", current));
-            }
+            println!("hex={:02X}, current = {:02X},counter= {}, left= {},right= {}",hex, current,counter, left, right);
         }
-        println!(" len : {}", len);
-        if len *8 < self.bitcount {
-            result.push_str(&"0".repeat((self.bitcount - len*8)/4));
-            AsciiResult::OKAdded(result)
-        }else if len * 8 > self.bitcount {
-            AsciiResult::OKRemoved(result[0..self.bitcount/4].to_string())
+        if counter > 0 {
+            result.push_str(&format!("{:02X}", current));
+        }
+        let hexlen = result.len();
+        println!(" len : {}, hexlen = {}", len, hexlen);
+        if hexlen * 4 < self.bitcount {
+            result.push_str(&"0".repeat((self.bitcount - hexlen*4)/4));
+            return AsciiResult::OKAdded(result)
         } else {
-            AsciiResult::OK(result)
-        }
+            return AsciiResult::OK(result);
+        } 
+
     }
 
     fn decode(&self) -> AsciiResult {
@@ -189,7 +190,7 @@ impl AsciiEncoder for SevenEncoder {
         let mut index = 0;
         let mut stop = false;
         loop {
-            let firstc = chars.next()
+            let firstc = chars.next();
             let secondc = chars.next();
             if firstc == None || secondc == None {
                 AsciiResult::InvalidChar;
@@ -279,11 +280,7 @@ impl AsciiEncoder for SevenEncoder {
                 break;
             }
         }
-        if result.len() * 8 > self.bitcount {
-            return AsciiResult::OKRemoved(result[0..self.bitcount/8].to_string());
-        } else {
-            return AsciiResult::OK(result);
-        } 
+        AsciiResult::OK(result)
     }
 }
 
@@ -336,6 +333,16 @@ mod tests {
         let result = encoder.encode();
         assert_eq!(result, res);
     }
+
+    fn test_seven_encode_fun(bit: usize, ascii: &str,res: AsciiResult) {
+        let encoder = SevenEncoder {
+            bitcount: bit,
+            ascii_string: ascii.to_string(),
+            hex_string: "".to_string(),
+        };
+        let result = encoder.encode();
+        assert_eq!(result, res);
+    }
     fn test_eight_decode_fun(bit:usize, hex: &str, res: AsciiResult) {
         let encoder = EightEncoder {
             bitcount: bit,
@@ -368,6 +375,15 @@ mod tests {
         test_eight_decode_fun(96, "313233343536373831323334あい", AsciiResult::InvalidChar);
         test_eight_decode_fun(96, "414243444546474844000000", AsciiResult::OKEnded(String::from("ABCDEFGHD")));
         test_eight_decode_fun(128, "5E2D2928272626252525243C3E3B2B5B", AsciiResult::OK(String::from("^-)('&&%%%$<>;+[")));
+    }
+    #[test]
+    fn test_seven_encode(){
+        test_seven_encode_fun(96, "1234567890123", AsciiResult::OK(String::from("62C99B46AD9BB872C18B2660")));
+        test_seven_encode_fun(96, "123456789012", AsciiResult::OKAdded(String::from("62C99B46AD9BB872C18B2000")));
+        test_seven_encode_fun(96, "", AsciiResult::EmptyString);
+        test_seven_encode_fun(96, "アイウエオか", AsciiResult::InvalidChar);
+        test_seven_encode_fun(96, "abcdEFghijkml", AsciiResult::OK(String::from("C38B1E48B1B3E8D3AB5EDD80")));
+
     }
 
 }
