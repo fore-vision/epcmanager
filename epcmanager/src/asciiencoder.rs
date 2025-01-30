@@ -1,4 +1,4 @@
-use iced::widget::shader::wgpu::hal::metal::AccelerationStructure;
+use iced::widget::shader::wgpu::{hal::metal::AccelerationStructure, naga::proc::index};
 
 
 
@@ -105,12 +105,16 @@ impl AsciiEncoder for EightEncoder {
                 
             }
         }
-
-        AsciiResult::OK(result)
+        if result.len() * 8 > self.bitcount {
+            return AsciiResult::OKRemoved(result[0..self.bitcount/8].to_string());
+        } else {
+            return AsciiResult::OK(result);
+        } 
     }
 }
 
 pub struct SevenEncoder {
+    bitcount: usize,
     ascii_string: String,
     hex_string: String,
 }
@@ -156,18 +160,130 @@ impl AsciiEncoder for SevenEncoder {
                 result.push_str(&format!("{:02X}", current));
             }
         }
-        AsciiResult::OK(result)
+        println!(" len : {}", len);
+        if len *8 < self.bitcount {
+            result.push_str(&"0".repeat((self.bitcount - len*8)/4));
+            AsciiResult::OKAdded(result)
+        }else if len * 8 > self.bitcount {
+            AsciiResult::OKRemoved(result[0..self.bitcount/4].to_string())
+        } else {
+            AsciiResult::OK(result)
+        }
     }
 
     fn decode(&self) -> AsciiResult {
         let mut result = String::new();
         let mut chars = self.hex_string.chars();
-        while let Some(c) = chars.next() {
-            let hex = format!("{}{}", c, chars.next().unwrap());
-            let byte = u8::from_str_radix(&hex, 16).unwrap();
-            result.push(byte as char);
+        if self.hex_string.len() % 2 != 0 {
+            return AsciiResult::OddNumber;
         }
-        AsciiResult::OK(result)
+        if self.hex_string.len() == 0 {
+            return AsciiResult::EmptyString;
+        }
+        if !self.hex_string.is_ascii() {
+            return AsciiResult::InvalidChar;
+        }
+
+        let mut counter = 0;
+        let mut current = 0;
+        let mut index = 0;
+        let mut stop = false;
+        loop {
+            let firstc = chars.next()
+            let secondc = chars.next();
+            if firstc == None || secondc == None {
+                AsciiResult::InvalidChar;
+            }
+            let hex = format!("{}{}", firstc.unwrap(), secondc.unwrap());
+            let ubyte = u8::from_str_radix(&hex, 16);
+            match ubyte {
+                Ok(byte) => {
+
+                    match counter {
+                        0 => {
+                            let v = byte >> 1;
+                            let ch = SevenEncoder::u8_to_ascii(v);
+                            match ch {
+                                CharResult::OK(c) => {
+                                    result.push(c);
+                                }
+                                CharResult::End => {
+                                    stop = true;
+                                }
+                                CharResult::InvalidChar => {
+                                    return AsciiResult::InvalidChar;
+                                }
+                                
+                            }
+                            current = byte & 0x01;
+                            counter = 1;
+                            index += 2;
+                        }
+                        6 => {
+                            let v = (byte >> 7) | (current << 1);
+                            let six = SevenEncoder::u8_to_ascii(v);
+                            match six {
+                                CharResult::OK(c) => {
+                                    result.push(c);
+                                }
+                                CharResult::End => {
+                                    stop = true;
+                                }
+                                CharResult::InvalidChar => {
+                                    return AsciiResult::InvalidChar;
+                                }
+                            }
+                            current = byte & 0x7F;
+                            let seven = SevenEncoder::u8_to_ascii(current);
+                            match seven {
+                                CharResult::OK(c) => {
+                                    result.push(c);
+                                }
+                                CharResult::End => {
+                                    stop = true;
+                                }
+                                CharResult::InvalidChar => {
+                                    return AsciiResult::InvalidChar;
+                                }
+                            }
+                            counter = 0;
+                        }
+                        _ => {
+                            let chh = (byte >> (1+counter)) | (current << (7-counter));
+                            let ch = SevenEncoder::u8_to_ascii(chh);
+                            match ch {
+                                CharResult::OK(c) => {
+                                    result.push(c);
+                                }
+                                CharResult::End => {
+                                    stop = true;
+                                }
+                                CharResult::InvalidChar => {
+                                    return AsciiResult::InvalidChar;
+                                }
+                            }
+                            current = byte & ((1 << (counter +1))-1);
+                            counter += 1;
+                            index += 2;
+                        }
+                    }
+                }
+                Err(_) => {
+                    return AsciiResult::InvalidChar;
+                }
+            }
+            if stop {
+                break;
+            }
+            if index >= self.hex_string.len() {
+                break;
+            }
+        }
+        if result.len() * 8 > self.bitcount {
+            return AsciiResult::OKRemoved(result[0..self.bitcount/8].to_string());
+        } else {
+            return AsciiResult::OK(result);
+        } 
     }
 }
 
@@ -247,8 +363,11 @@ mod tests {
     fn test_eight_decode(){
         test_eight_decode_fun(96, "313233343536373831323334", AsciiResult::OK(String::from("123456781234")));
         test_eight_decode_fun(96, "313233343536373831323300", AsciiResult::OKEnded(String::from("12345678123")));
-        test_eight_decode_fun(96, "31323334353637383132333434", AsciiResult::OKRemoved(String::from("12345678123")));
-        te
+        test_eight_decode_fun(96, "31323334353637383132333434", AsciiResult::OKRemoved(String::from("123456781234")));
+        test_eight_decode_fun(96, "", AsciiResult::EmptyString);
+        test_eight_decode_fun(96, "313233343536373831323334あい", AsciiResult::InvalidChar);
+        test_eight_decode_fun(96, "414243444546474844000000", AsciiResult::OKEnded(String::from("ABCDEFGHD")));
+        test_eight_decode_fun(128, "5E2D2928272626252525243C3E3B2B5B", AsciiResult::OK(String::from("^-)('&&%%%$<>;+[")));
     }
 
 }
