@@ -1,6 +1,9 @@
 use iced::widget::{button, text_input,column,combo_box};
 use iced::Fill;
-mod asciiencoder;
+mod ascii_encoder;
+mod eight_encoder;
+mod seven_encoder;
+mod six_encoder;
 
 #[derive(Default,Clone,Copy, PartialEq, Eq,Debug)]
 enum Bit {
