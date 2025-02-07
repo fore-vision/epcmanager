@@ -1,3 +1,4 @@
+use ascii_encoder::AsciiEncoder;
 use iced::widget::{button, text_input,column,combo_box};
 use iced::Fill;
 mod ascii_encoder;
@@ -62,6 +63,9 @@ impl EpcManager {
         match message {
             Message::Encode => {
                 self.hex_string = self.ascii_string.clone();
+                let _eight = eight_encoder::EightEncoder::new(96);
+                let _result = _eight.encode(&self.ascii_string);
+                println!("{:?}", _result);
             }
             Message::Decode => {
                 self.ascii_string = self.hex_string.clone();

@@ -1,4 +1,4 @@
-use crate::ascii_encoder::{AsciiEncoder, AsciiResult};
+use crate::ascii_encoder::{AsciiEncoder, AsciiResult, BaseEncoder};
 
 enum SixResult {
     OK,
@@ -7,33 +7,40 @@ enum SixResult {
 }
 
 pub struct SixEncoder {
-    bitcount: usize,
-    ascii_string: String,
-    hex_string: String,
+    base: BaseEncoder,
+}
+impl SixEncoder {
+    pub fn new(bitcount: usize) -> Self {
+        Self {
+            base: BaseEncoder::new(bitcount),
+        }
+    }
 }
 
 impl AsciiEncoder for SixEncoder {
-    fn encode(&self) -> AsciiResult {
+    fn encode(&self, ascii: &str) -> AsciiResult {
         let mut six_result = SixResult::OK;
-        let len = self.ascii_string.len();
+        let ascii_string = String::from(ascii);
+        let len = ascii_string.len();
         if len == 0 {
             return AsciiResult::EmptyString;
         }
 
-        if !self.ascii_string.is_ascii() {
+        if !ascii_string.is_ascii() {
             return AsciiResult::InvalidChar;
         }
-        let encode_string = if len * 6 > self.bitcount {
+        let bitcount = self.base.get_bitcount();
+        let encode_string = if len * 6 > bitcount {
             six_result = SixResult::Removed;
-            self.ascii_string[0..self.bitcount / 6].to_string()
-        } else if len * 6 < self.bitcount {
-            let mut padded_string = self.ascii_string.clone();
-            padded_string.push_str(&" ".repeat((self.bitcount - len * 6) / 6));
+            ascii_string[0..bitcount / 6].to_string()
+        } else if len * 6 < bitcount {
+            let mut padded_string = ascii_string.clone();
+            padded_string.push_str(&" ".repeat((bitcount - len * 6) / 6));
             six_result = SixResult::Added;
             padded_string.clone()
 
         } else {
-            self.ascii_string.clone()
+            ascii_string.clone()
         };
         let mut counter = 0;
         let mut current = 0;
@@ -91,7 +98,7 @@ impl AsciiEncoder for SixEncoder {
     }
 
 
-    fn decode(&self) -> AsciiResult {
+    fn decode(&self, hex: &str) -> AsciiResult {
         fn decode_char(byte: u8) -> u8 {
             match byte {
                 0 => 0,
@@ -100,14 +107,15 @@ impl AsciiEncoder for SixEncoder {
             }
         }
         let mut result = String::new();
-        let mut chars = self.hex_string.chars();
-        if self.hex_string.len() % 2 != 0 {
+        let hex_string = String::from(hex);
+        let mut chars = hex_string.chars();
+        if hex_string.len() % 2 != 0 {
             return AsciiResult::OddNumber;
         }
-        if self.hex_string.len() == 0 {
+        if hex_string.len() == 0 {
             return AsciiResult::EmptyString;
         }
-        if !self.hex_string.is_ascii() {
+        if !hex_string.is_ascii() {
             return AsciiResult::InvalidChar;
         }
 
@@ -213,23 +221,15 @@ mod tests {
     use super::*;
 
     fn test_six_encode_fun(bit: usize, ascii: &str,res: AsciiResult) {
-        let encoder = SixEncoder {
-            bitcount: bit,
-            ascii_string: ascii.to_string(),
-            hex_string: "".to_string(),
-        };
-        let result = encoder.encode();
+        let encoder = SixEncoder::new(bit);
+        let result = encoder.encode(ascii);
         assert_eq!(result, res);
     }
 
 
     fn test_six_decode_fun(bit:usize, hex: &str, res: AsciiResult) {
-        let encoder = SixEncoder {
-            bitcount: bit,
-            ascii_string: "".to_string(),
-            hex_string: hex.to_string(),
-        };
-        let result = encoder.decode();
+        let encoder = SixEncoder::new(bit);
+        let result = encoder.decode(hex);
         assert_eq!(result, res);
     }
     #[test]

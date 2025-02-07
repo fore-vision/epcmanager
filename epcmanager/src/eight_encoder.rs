@@ -1,49 +1,57 @@
-use crate::ascii_encoder::{AsciiEncoder, AsciiResult, CharResult};
+use crate::ascii_encoder::{AsciiEncoder, AsciiResult, CharResult, BaseEncoder};
 
 pub struct EightEncoder {
-    bitcount: usize,
-    ascii_string: String,
-    
-    hex_string: String,
+    base: BaseEncoder,
+}
+
+impl EightEncoder {
+    pub fn new(bitcount: usize) -> Self {
+        Self {
+            base: BaseEncoder::new(bitcount),
+        }
+    }
 }
 
 impl AsciiEncoder for EightEncoder {
-    fn encode(&self) -> AsciiResult {
-        let len = self.ascii_string.len();
+    fn encode(&self, ascii: &str) -> AsciiResult {
+        let ascii_string = String::from(ascii);
+        let len = ascii_string.len();
         if len == 0 {
             return AsciiResult::EmptyString;
         }
-        if !self.ascii_string.is_ascii() {
+        if !ascii_string.is_ascii() {
             return AsciiResult::InvalidChar;
         }
         let mut result = String::new();
-        println!("Bitcount: {}", self.bitcount);
-        for c in self.ascii_string.chars() {
+        let bitcount = self.base.get_bitcount();
+        println!("Bitcount: {}", bitcount);
+        for c in ascii_string.chars() {
             let hex = format!("{:02X}", c as u8);
             println!("hex =  {}", hex);
             result.push_str(&hex);
         }
         println!(" len : {}", len);
-        if len *8 < self.bitcount {
-            result.push_str(&"0".repeat((self.bitcount - len*8)/4));
+        if len *8 < bitcount {
+            result.push_str(&"0".repeat((bitcount - len*8)/4));
             AsciiResult::OKAdded(result)
-        }else if len * 8 > self.bitcount {
-            AsciiResult::OKRemoved(result[0..self.bitcount/4].to_string())
+        }else if len * 8 > bitcount {
+            AsciiResult::OKRemoved(result[0..bitcount/4].to_string())
         } else {
             AsciiResult::OK(result)
         }
     }
 
-    fn decode(&self) -> AsciiResult {
+    fn decode(&self, hex: &str) -> AsciiResult {
         let mut result = String::new();
-        let mut chars = self.hex_string.chars();
-        if self.hex_string.len() % 2 != 0 {
+        let hex_string = String::from(hex);
+        let mut chars = hex_string.chars();
+        if hex_string.len() % 2 != 0 {
             return AsciiResult::OddNumber;
         }
-        if self.hex_string.len() == 0 {
+        if hex_string.len() == 0 {
             return AsciiResult::EmptyString;
         }
-        if !self.hex_string.is_ascii() {
+        if !hex_string.is_ascii() {
             return AsciiResult::InvalidChar;
         }
 
@@ -72,8 +80,9 @@ impl AsciiEncoder for EightEncoder {
                 
             }
         }
-        if result.len() * 8 > self.bitcount {
-            return AsciiResult::OKRemoved(result[0..self.bitcount/8].to_string());
+        let bitcount = self.base.get_bitcount();
+        if result.len() * 8 > bitcount {
+            return AsciiResult::OKRemoved(result[0..bitcount/8].to_string());
         } else {
             return AsciiResult::OK(result);
         } 
@@ -83,23 +92,16 @@ impl AsciiEncoder for EightEncoder {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     fn test_eight_encode_fun(bit: usize, ascii: &str,res: AsciiResult) {
-        let encoder = EightEncoder {
-            bitcount: bit,
-            ascii_string: ascii.to_string(),
-            hex_string: "".to_string(),
-        };
-        let result = encoder.encode();
+        let encoder = EightEncoder::new(bit);
+        let result = encoder.encode( ascii);
         assert_eq!(result, res);
     }
     fn test_eight_decode_fun(bit:usize, hex: &str, res: AsciiResult) {
-        let encoder = EightEncoder {
-            bitcount: bit,
-            ascii_string: "".to_string(),
-            hex_string: hex.to_string(),
-        };
-        let result = encoder.decode();
+        let encoder = EightEncoder::new(bit);
+        let result = encoder.decode(hex);
         assert_eq!(result, res);
     }
     #[test]

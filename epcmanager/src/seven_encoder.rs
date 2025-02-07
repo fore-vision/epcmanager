@@ -1,20 +1,26 @@
-use crate::ascii_encoder::{AsciiEncoder, AsciiResult, CharResult};
+use crate::ascii_encoder::{AsciiEncoder, AsciiResult, CharResult, BaseEncoder};
 
 
 pub struct SevenEncoder {
-    bitcount: usize,
-    ascii_string: String,
-    hex_string: String,
+ base: BaseEncoder,
 }
 
+impl SevenEncoder {
+    pub fn new(bitcount: usize) -> Self {
+        Self {
+            base: BaseEncoder::new(bitcount),
+        }
+    }
+}
 impl AsciiEncoder for SevenEncoder {
-    fn encode(&self) -> AsciiResult {
-        let len = self.ascii_string.len();
+    fn encode(&self, ascii: &str) -> AsciiResult {
+        let ascii_string = String::from(ascii);
+        let len = ascii_string.len();
         if len == 0 {
             return AsciiResult::EmptyString;
         }
 
-        if !self.ascii_string.is_ascii() {
+        if !ascii_string.is_ascii() {
             return AsciiResult::InvalidChar;
         }
         let mut result = String::new();
@@ -22,7 +28,7 @@ impl AsciiEncoder for SevenEncoder {
         let mut current = 0;
         let mut left = 0;
         let mut right = 0;
-        for c in self.ascii_string.chars() {
+        for c in ascii_string.chars() {
             let hex = c as u8;
             match counter {
                 0 => {
@@ -51,8 +57,9 @@ impl AsciiEncoder for SevenEncoder {
         }
         let hexlen = result.len();
         println!(" len : {}, hexlen = {}", len, hexlen);
-        if hexlen * 4 < self.bitcount {
-            result.push_str(&"0".repeat((self.bitcount - hexlen*4)/4));
+        let bitcount = self.base.get_bitcount();
+        if hexlen * 4 < bitcount {
+            result.push_str(&"0".repeat((bitcount - hexlen*4)/4));
             return AsciiResult::OKAdded(result)
         } else {
             return AsciiResult::OK(result);
@@ -60,16 +67,17 @@ impl AsciiEncoder for SevenEncoder {
 
     }
 
-    fn decode(&self) -> AsciiResult {
+    fn decode(&self, hex: &str) -> AsciiResult {
         let mut result = String::new();
-        let mut chars = self.hex_string.chars();
-        if self.hex_string.len() % 2 != 0 {
+        let hex_string = String::from(hex);
+        let mut chars = hex_string.chars();
+        if hex_string.len() % 2 != 0 {
             return AsciiResult::OddNumber;
         }
-        if self.hex_string.len() == 0 {
+        if hex_string.len() == 0 {
             return AsciiResult::EmptyString;
         }
-        if !self.hex_string.is_ascii() {
+        if !hex_string.is_ascii() {
             return AsciiResult::InvalidChar;
         }
 
@@ -165,7 +173,7 @@ impl AsciiEncoder for SevenEncoder {
             if stop {
                 break;
             }
-            if index >= self.hex_string.len() {
+            if index >= hex_string.len() {
                 break;
             }
         }
@@ -183,22 +191,14 @@ mod tests {
     use super::*;
 
     fn test_seven_encode_fun(bit: usize, ascii: &str,res: AsciiResult) {
-        let encoder = SevenEncoder {
-            bitcount: bit,
-            ascii_string: ascii.to_string(),
-            hex_string: "".to_string(),
-        };
-        let result = encoder.encode();
+        let encoder = SevenEncoder::new(bit);
+        let result = encoder.encode(ascii);
         assert_eq!(result, res);
     }
 
     fn test_seven_decode_fun(bit:usize, hex: &str, res: AsciiResult) {
-        let encoder = SevenEncoder {
-            bitcount: bit,
-            ascii_string: "".to_string(),
-            hex_string: hex.to_string(),
-        };
-        let result = encoder.decode();
+        let encoder = SevenEncoder::new(bit);
+        let result = encoder.decode(hex);
         assert_eq!(result, res);
     }
     #[test]
