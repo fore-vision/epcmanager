@@ -1,4 +1,7 @@
-use ascii_encoder::AsciiEncoder;
+use ascii_encoder::{AsciiEncoder, AsciiEncoderType};
+use eight_encoder::EightEncoder;
+use seven_encoder::SevenEncoder;
+use six_encoder::SixEncoder;
 use iced::widget::{button, text_input,column,combo_box};
 use iced::Fill;
 mod ascii_encoder;
@@ -22,7 +25,16 @@ impl Bit {
             Bit::Six => "6",
         }
     }
+    fn getEncode(&self,bit: usize) -> AsciiEncoderType {
+        match self {
+            Bit::Eight => AsciiEncoderType::Eight(EightEncoder::new(bit)),
+            Bit::Seven => AsciiEncoderType::Seven(SevenEncoder::new(bit)),
+            Bit::Six => AsciiEncoderType::Six(SixEncoder::new(bit)),
+        }
+
+    }
 }
+
 
 impl std::fmt::Display for Bit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -62,13 +74,48 @@ impl EpcManager {
     fn update(&mut self, message: Message) {
         match message {
             Message::Encode => {
-                self.hex_string = self.ascii_string.clone();
-                let _eight = eight_encoder::EightEncoder::new(96);
-                let _result = _eight.encode(&self.ascii_string);
-                println!("{:?}", _result);
+                if !self.selected_bit.is_none() {
+                    let encoder = self.selected_bit.unwrap().getEncode(96);
+                    let _result = encoder.encode(&self.ascii_string);
+                    println!("{:?}", _result);
+                    match _result {
+                        ascii_encoder::AsciiResult::OK(hex) => {
+                            self.hex_string = hex;
+                        }
+                        ascii_encoder::AsciiResult::OKAdded(hex) => {
+                            self.hex_string = hex;
+                        }
+                        ascii_encoder::AsciiResult::OKRemoved(hex) => {
+                            self.hex_string = hex;
+                        }
+                        _ => {}
+                        
+                    }
+    
+                }
+                
             }
             Message::Decode => {
-                self.ascii_string = self.hex_string.clone();
+                if !self.selected_bit.is_none() {
+                    let encoder = self.selected_bit.unwrap().getEncode(96);
+                    let _result = encoder.decode(&self.hex_string);
+                    println!("{:?}", _result);
+                    match _result {
+                        ascii_encoder::AsciiResult::OK(hex) => {
+                            self.ascii_string = hex;
+                        }
+                        ascii_encoder::AsciiResult::OKAdded(hex) => {
+                            self.ascii_string = hex;
+                        }
+                        ascii_encoder::AsciiResult::OKRemoved(hex) => {
+                            self.ascii_string = hex;
+                        }
+                        _ => {}
+                        
+                    }
+    
+                }
+
             }
             Message::SelectedBit(bit) => {
                 self.selected_bit = Some(bit);
