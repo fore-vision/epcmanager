@@ -1,3 +1,5 @@
+use iced::widget::shader::wgpu::hal::auxil::db;
+
 use crate::ascii_encoder::{AsciiEncoder, AsciiResult, BaseEncoder};
 
 enum SixResult {
@@ -48,7 +50,10 @@ impl AsciiEncoder for SixEncoder {
         let mut next = 0;
         for c in encode_string.chars() {
             let byte = c as u8;
-            println!("byte = {:},counter = {},current = {}, next ={}", byte,counter,current,next);
+            dbg!(byte);
+            dbg!(counter);
+            dbg!(current);
+            dbg!(next);
             let code =if byte > 0x40 {
                 byte - 0x40
             } else {
@@ -88,7 +93,9 @@ impl AsciiEncoder for SixEncoder {
         if counter > 0 {
             let hex = format!("{:02X}", current);
             result.push_str(&hex);
-            println!("counter= {}, hex = {:}",counter, hex);
+            dbg!(&counter);
+            dbg!(hex);
+
         }
         match six_result {
             SixResult::OK => AsciiResult::OK(result),
@@ -126,7 +133,8 @@ impl AsciiEncoder for SixEncoder {
         loop {
             let firstc = chars.next();
             let secondc = chars.next();
-            println!("firstc = {:?}, secondc = {:?}", firstc, secondc);
+            dbg!(&firstc);
+            dbg!(&secondc);
             if firstc.is_none() || secondc.is_none() {
                 break;
             }
@@ -136,12 +144,14 @@ impl AsciiEncoder for SixEncoder {
                 return AsciiResult::InvalidChar;
             } else {
                 let byte = ubyte.unwrap();
-                println!("byte = {:02X}", byte);
+                dbg!(byte);
+                dbg!(counter);
                 match counter %3 {
                     0 => {
                         let v = (byte  >> 2) & 0x3f;
                         let d = decode_char(v);
-                        println!("0 counter = {}, v = {:02X}, d = {:02X}",counter, v, d);
+                        dbg!(v);
+                        dbg!(d);
                         match d {
                             32 => {
                                 stop = true;
@@ -149,7 +159,7 @@ impl AsciiEncoder for SixEncoder {
                             33..127 => {
                                 result.push(d as char);
                                 next = (byte & 0x03) << 4;
-                                println!("next = {:02X}", next);
+                                dbg!(next);
                             }
                             _ => {
                                 return AsciiResult::InvalidChar;
@@ -159,7 +169,8 @@ impl AsciiEncoder for SixEncoder {
                     1 => {
                         let v = ((byte >> 4) & 0x0f) + next;
                         let d = decode_char(v);
-                        println!("1 counter = {}, v = {:02X}, d = {:02X}",counter, v, d);
+                        dbg!(v);
+                        dbg!(d);
                         match d {
                             32 => {
                                 stop = true;
@@ -167,7 +178,7 @@ impl AsciiEncoder for SixEncoder {
                             33..127 => {
                                 result.push(d as char);
                                 next = (byte & 0x0f) << 2;
-                                println!("next = {:02X}", next);
+                                dbg!(next);
                             }
                             _ => {
                                 return AsciiResult::InvalidChar;
@@ -177,7 +188,8 @@ impl AsciiEncoder for SixEncoder {
                     _ => {
                         let v = ((byte >> 6) & 0x03) + next;
                         let d = decode_char(v);
-                        println!("2 counter = {}, v = {:02X}, d = {:02X}, next = {}",counter, v, d,next);
+                        dbg!(v);
+                        dbg!(d);
                         match d {
                             32 => {
                                 stop = true;
@@ -186,7 +198,8 @@ impl AsciiEncoder for SixEncoder {
                                 result.push(d as char);
                                 next = byte & 0x3f;
                                 let nd = decode_char(next);
-                                println!("next = {:02X}, nd = {:02X}", next, nd);
+                                dbg!(nd);
+                                dbg!(next);
                                 match nd {
                                     32 => {
                                         stop = true;

@@ -113,7 +113,7 @@ impl EpcManager {
                     let bit = self.selected_num_bits.unwrap().get_num();
                     let encoder = self.selected_bit.unwrap().get_encode(bit);
                     let _result = encoder.encode(&self.ascii_string);
-                    println!("{:?}", _result);
+                    dbg!(&_result);
                     match _result {
                         ascii_encoder::AsciiResult::OK(hex) => {
                             self.hex_string = hex;
@@ -140,7 +140,7 @@ impl EpcManager {
 
                     let encoder = self.selected_bit.unwrap().get_encode(bit);
                     let _result = encoder.decode(&self.hex_string);
-                    println!("{:?}", _result);
+                    dbg!(&_result);
                     match _result {
                         ascii_encoder::AsciiResult::OK(hex) => {
                             self.ascii_string = hex;
@@ -156,7 +156,7 @@ impl EpcManager {
                         }
                         ascii_encoder::AsciiResult::OKEnded(hex) => {
                             self.ascii_string = hex;
-                            self.result_message = String::from("Ended text");
+                            self.result_message = String::from("Text Ended ");
                         }
                         _ => {}
                         
@@ -181,20 +181,32 @@ impl EpcManager {
         }
     }
     fn view(&self) -> iced::Element<Message> {
+        let mut encode_button = button("Encode");
+        if !self.ascii_string.is_empty() {
+            encode_button =  encode_button.on_press(Message::Encode);
+        } 
+        let mut decode_button = button("Decode");
+        if !self.hex_string.is_empty() {
+            decode_button = decode_button.on_press(Message::Decode);
+        }
         container(
             column![
-                
-                combo_box(&self.bit, "bit", self.selected_bit.as_ref(),Message::SelectedBit)
-                ,
-                combo_box(&self.num_bits, "num_bits", self.selected_num_bits.as_ref(),Message::SelectedNumBits) ,
-                text_input("ASCII", &self.ascii_string).on_input(Message::AsciiChanged),
-                text_input("HEX", &self.hex_string).on_input(Message::HexChanged),
-                row![button("Encode").on_press(Message::Encode),button("Decode").on_press(Message::Decode),
-                ],
+                Text::new("EPC Manager").size(30),
+                row![
+                    Text::new("EPC size"),
+                    combo_box(&self.num_bits, "num_bits", self.selected_num_bits.as_ref(),Message::SelectedNumBits) ,
+                    ].spacing(10),
+                row![
+                    Text::new("Eoncoder"),
+                    combo_box(&self.bit, "bit", self.selected_bit.as_ref(),Message::SelectedBit),
+                    ].spacing(10),
+                text_input("ASCII Text", &self.ascii_string).on_input(Message::AsciiChanged),
+                text_input("HEX Text", &self.hex_string).on_input(Message::HexChanged),
+                row![encode_button, decode_button].spacing(10),
                 Text::new(&self.result_message)
                 
             ].spacing(10)
-        ).padding(10).height(300).width(300)
+        ).padding(10).height(300).width(500)
 
             .into()
     }

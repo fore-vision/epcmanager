@@ -1,3 +1,5 @@
+use iced::widget::shader::wgpu::hal::auxil::db;
+
 use crate::ascii_encoder::{AsciiEncoder, AsciiResult, CharResult, BaseEncoder};
 
 
@@ -30,6 +32,11 @@ impl AsciiEncoder for SevenEncoder {
         let mut right = 0;
         for c in ascii_string.chars() {
             let hex = c as u8;
+            dbg!(hex);
+            dbg!(current);
+            dbg!(counter);
+            dbg!(left);
+            dbg!(right);
             match counter {
                 0 => {
                     current = hex << 1;
@@ -50,13 +57,13 @@ impl AsciiEncoder for SevenEncoder {
                     counter+=1;
                 }
             }
-            println!("hex={:02X}, current = {:02X},counter= {}, left= {},right= {}",hex, current,counter, left, right);
         }
         if counter > 0 {
             result.push_str(&format!("{:02X}", current));
         }
         let hexlen = result.len();
-        println!(" len : {}, hexlen = {}", len, hexlen);
+        dbg!(len);
+        dbg!(hexlen);
         let bitcount = self.base.get_bitcount();
         if hexlen * 4 < bitcount {
             result.push_str(&"0".repeat((bitcount - hexlen*4)/4));
@@ -88,7 +95,8 @@ impl AsciiEncoder for SevenEncoder {
         loop {
             let firstc = chars.next();
             let secondc = chars.next();
-            println!("firstc = {:?}, secondc = {:?}", firstc, secondc);
+            dbg!(&firstc);
+            dbg!(&secondc);
             if firstc.is_none() || secondc.is_none() {
                 break;
             }
