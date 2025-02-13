@@ -2,8 +2,7 @@ use ascii_encoder::{AsciiEncoder, AsciiEncoderType};
 use eight_encoder::EightEncoder;
 use seven_encoder::SevenEncoder;
 use six_encoder::SixEncoder;
-use iced::widget::{button, text_input,column,combo_box,container};
-use iced::Fill;
+use iced::widget::{button, text_input,column,combo_box,container,Text,row};
 mod ascii_encoder;
 mod eight_encoder;
 mod seven_encoder;
@@ -81,6 +80,7 @@ struct EpcManager {
     selected_bit: Option<Bit>,
     num_bits: combo_box::State<NumBits>,
     selected_num_bits: Option<NumBits>,
+    result_message: String,
 
 }
 
@@ -103,6 +103,7 @@ impl EpcManager {
             selected_bit: Bit::Eight.into(),
             num_bits: combo_box::State::new(NumBits::ALL.to_vec()),
             selected_num_bits: NumBits::Bit96.into(),
+            result_message: String::new(),
         }
     }
     fn update(&mut self, message: Message) {
@@ -116,12 +117,15 @@ impl EpcManager {
                     match _result {
                         ascii_encoder::AsciiResult::OK(hex) => {
                             self.hex_string = hex;
+                            self.result_message = String::from("OK");
                         }
                         ascii_encoder::AsciiResult::OKAdded(hex) => {
                             self.hex_string = hex;
+                            self.result_message = String::from("Added padding");
                         }
                         ascii_encoder::AsciiResult::OKRemoved(hex) => {
                             self.hex_string = hex;
+                            self.result_message = String::from("Removed text");
                         }
                         _ => {}
                         
@@ -140,12 +144,19 @@ impl EpcManager {
                     match _result {
                         ascii_encoder::AsciiResult::OK(hex) => {
                             self.ascii_string = hex;
+                            self.result_message = String::from("OK");
                         }
                         ascii_encoder::AsciiResult::OKAdded(hex) => {
                             self.ascii_string = hex;
+                            self.result_message = String::from("Added space");
                         }
                         ascii_encoder::AsciiResult::OKRemoved(hex) => {
                             self.ascii_string = hex;
+                            self.result_message = String::from("Removed text");
+                        }
+                        ascii_encoder::AsciiResult::OKEnded(hex) => {
+                            self.ascii_string = hex;
+                            self.result_message = String::from("Ended text");
                         }
                         _ => {}
                         
@@ -172,13 +183,16 @@ impl EpcManager {
     fn view(&self) -> iced::Element<Message> {
         container(
             column![
-                button("Encode").on_press(Message::Encode),
+                
                 combo_box(&self.bit, "bit", self.selected_bit.as_ref(),Message::SelectedBit)
                 ,
                 combo_box(&self.num_bits, "num_bits", self.selected_num_bits.as_ref(),Message::SelectedNumBits) ,
                 text_input("ASCII", &self.ascii_string).on_input(Message::AsciiChanged),
                 text_input("HEX", &self.hex_string).on_input(Message::HexChanged),
-                button("Decode").on_press(Message::Decode),
+                row![button("Encode").on_press(Message::Encode),button("Decode").on_press(Message::Decode),
+                ],
+                Text::new(&self.result_message)
+                
             ].spacing(10)
         ).padding(10).height(300).width(300)
 
