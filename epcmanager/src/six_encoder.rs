@@ -157,7 +157,7 @@ impl AsciiEncoder for SixEncoder {
                         }
                     }
                     1 => {
-                        let v = (byte >> 4) & 0x0f + next;
+                        let v = ((byte >> 4) & 0x0f) + next;
                         let d = decode_char(v);
                         println!("1 counter = {}, v = {:02X}, d = {:02X}",counter, v, d);
                         match d {
