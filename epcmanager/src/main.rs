@@ -200,8 +200,14 @@ impl EpcManager {
                     Text::new("Eoncoder"),
                     combo_box(&self.bit, "bit", self.selected_bit.as_ref(),Message::SelectedBit),
                     ].spacing(10),
-                text_input("ASCII Text", &self.ascii_string).on_input(Message::AsciiChanged),
-                text_input("HEX Text", &self.hex_string).on_input(Message::HexChanged),
+                row![
+                    Text::new("ASCII Text"),
+                    text_input("ASCII Text", &self.ascii_string).on_input(Message::AsciiChanged),
+                ].spacing(10),
+                row![
+                    Text::new("HEX Text"),
+                    text_input("HEX Text", &self.hex_string).on_input(Message::HexChanged),
+                ].spacing(10),
                 row![encode_button, decode_button].spacing(10),
                 Text::new(&self.result_message)
                 
