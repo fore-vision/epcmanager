@@ -1,5 +1,3 @@
-use iced::widget::shader::wgpu::hal::auxil::db;
-
 use crate::ascii_encoder::{AsciiEncoder, AsciiResult, BaseEncoder};
 
 enum SixResult {
