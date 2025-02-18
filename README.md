@@ -2,7 +2,7 @@
 
 ## Desciption
 
-epcmanager is to change the EPC data to other format.
+epcmanager is to change the EPC data of the RFID to other format.
 
 ## build
 

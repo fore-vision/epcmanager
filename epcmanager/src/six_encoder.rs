@@ -1,4 +1,5 @@
-use crate::ascii_encoder::{AsciiEncoder, AsciiResult, BaseEncoder};
+use crate::ascii_encoder::{AsciiEncoder, AsciiResult, BaseEncoder, StringResult};
+use regex::Regex;
 
 enum SixResult {
     OK,
@@ -32,15 +33,15 @@ impl AsciiEncoder for SixEncoder {
         let bitcount = self.base.get_bitcount();
         let encode_string = if len * 6 > bitcount {
             six_result = SixResult::Removed;
-            ascii_string[0..bitcount / 6].to_string()
+            ascii_string[0..bitcount / 6].to_string().to_uppercase()
         } else if len * 6 < bitcount {
             let mut padded_string = ascii_string.clone();
             padded_string.push_str(&" ".repeat((bitcount - len * 6) / 6));
             six_result = SixResult::Added;
-            padded_string.clone()
+            padded_string.to_uppercase().clone()
 
         } else {
-            ascii_string.clone()
+            ascii_string.to_uppercase().clone()
         };
         let mut counter = 0;
         let mut current = 0;
@@ -66,10 +67,15 @@ impl AsciiEncoder for SixEncoder {
                 }
                 _ => {
                     let first = counter - 2;
+                    dbg!(first);
                     current += code >> first;
+                    dbg!(current);
                     let second = 8-first;
+                    dbg!(second);
                     let mask = ((1<< first) -1) & 0xff;
+                    dbg!(mask);
                     let sub = (mask & code) & 0xff;
+                    dbg!(sub);
                     next = (sub << second) & 0xff;
 
 
@@ -84,7 +90,6 @@ impl AsciiEncoder for SixEncoder {
                 counter -= 8;
                 current = next;
                 next = 0;
-                println!("hex = {:}", hex);
             }
 
         }
@@ -225,6 +230,40 @@ impl AsciiEncoder for SixEncoder {
         }
         AsciiResult::OK(result)
     }
+    fn check_ascii(&self, ascii: &str) -> StringResult {
+        let result = self.check_ascii_len(ascii);
+        if result != crate::ascii_encoder::StringResult::OK {
+            return result;
+        }
+        let re = Regex::new(r"^[0-9a-zA-z]+$").unwrap();
+        if !re.is_match(ascii) {
+            return StringResult::InvalidChar;
+        }
+        let len = dbg!( ascii.len() * 6);
+        let bitcount = self.base.get_bitcount();
+        dbg!(bitcount);
+        if len > bitcount {
+            return StringResult::LongString;
+        } else if len < bitcount {
+            return StringResult::ShortString;
+        } 
+        StringResult::OK
+    }
+    fn check_hex(&self, hex: &str) -> StringResult {
+        let result = self.check_hex_len(hex);
+        if result != crate::ascii_encoder::StringResult::OK {
+            return result;
+        }
+        let len = dbg!( hex.len() * 4);
+        let bitcount = self.base.get_bitcount();
+        dbg!(bitcount);
+        if len > bitcount {
+            return StringResult::LongString;
+        } else if len < bitcount {
+            return StringResult::ShortString;
+        } 
+        StringResult::OK
+    }
 }
 
 #[cfg(test)]
@@ -246,6 +285,8 @@ mod tests {
     #[test]
     fn test_six_encode(){
         test_six_encode_fun(96, "ABCDEFGHIJKLMNOP", AsciiResult::OK(String::from("0420C41461C824A2CC34E3D0")));
+        test_six_encode_fun(96, "EEEEEEEEEEEEEEEE", AsciiResult::OK(String::from("145145145145145145145145")));
+        test_six_encode_fun(96,"eeeeeeeeeeeeeeee", AsciiResult::OK(String::from("145145145145145145145145")));
         test_six_encode_fun(96, "ABCDEFGHIJKLMNO", AsciiResult::OKAdded(String::from("0420C41461C824A2CC34E3E0")));
         test_six_decode_fun(96, "", AsciiResult::EmptyString);
         test_six_decode_fun(96, "アイウエオか", AsciiResult::InvalidChar);

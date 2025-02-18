@@ -1,4 +1,4 @@
-use crate::ascii_encoder::{AsciiEncoder, AsciiResult, CharResult, BaseEncoder};
+use crate::ascii_encoder::{AsciiEncoder, AsciiResult, CharResult, BaseEncoder,StringResult};
 
 
 pub struct SevenEncoder {
@@ -188,6 +188,34 @@ impl AsciiEncoder for SevenEncoder {
          } else {
             AsciiResult::OK(result)
          } 
+    }
+    fn check_ascii(&self, ascii: &str) -> StringResult {
+        let result = self.check_ascii_len(ascii);
+        if result != StringResult::OK {
+            return result;
+        }
+        let len = dbg!( ascii.len() * 7);
+        let bitcount = self.base.get_bitcount();
+        if len > bitcount {
+            return StringResult::LongString;
+        } else if len +7 < bitcount {
+            return StringResult::ShortString;
+        }
+        StringResult::OK
+    }
+    fn check_hex(&self, hex: &str) -> StringResult {
+        let result = self.check_hex_len(hex);
+        if result != StringResult::OK {
+            return result;
+        }
+        let len = dbg!( hex.len() * 4);
+        let bitcount = self.base.get_bitcount();
+        if len > bitcount {
+            return StringResult::LongString;
+        } else if len < bitcount {
+            return StringResult::ShortString;
+        } 
+        StringResult::OK
     }
 }
 

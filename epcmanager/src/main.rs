@@ -1,4 +1,4 @@
-use ascii_encoder::{AsciiEncoder, AsciiEncoderType};
+use ascii_encoder::{AsciiEncoder, AsciiEncoderType, StringResult};
 use eight_encoder::EightEncoder;
 use seven_encoder::SevenEncoder;
 use six_encoder::SixEncoder;
@@ -9,33 +9,33 @@ mod seven_encoder;
 mod six_encoder;
 
 #[derive(Default,Clone,Copy, PartialEq, Eq,Debug)]
-enum Bit {
+enum BitEncoder {
     Eight,
     #[default]
     Seven,
     Six,
 }
-impl Bit {
-    const ALL: [Bit; 3] = [Bit::Eight, Bit::Seven, Bit::Six];
+impl BitEncoder {
+    const ALL: [BitEncoder; 3] = [BitEncoder::Eight, BitEncoder::Seven, BitEncoder::Six];
     fn str(&self) -> &str {
         match self {
-            Bit::Eight => "8",
-            Bit::Seven => "7",
-            Bit::Six => "6",
+            BitEncoder::Eight => "8",
+            BitEncoder::Seven => "7",
+            BitEncoder::Six => "6",
         }
     }
     fn get_encode(&self,bit: usize) -> AsciiEncoderType {
         match self {
-            Bit::Eight => AsciiEncoderType::Eight(EightEncoder::new(bit)),
-            Bit::Seven => AsciiEncoderType::Seven(SevenEncoder::new(bit)),
-            Bit::Six => AsciiEncoderType::Six(SixEncoder::new(bit)),
+            BitEncoder::Eight => AsciiEncoderType::Eight(EightEncoder::new(bit)),
+            BitEncoder::Seven => AsciiEncoderType::Seven(SevenEncoder::new(bit)),
+            BitEncoder::Six => AsciiEncoderType::Six(SixEncoder::new(bit)),
         }
 
     }
 }
 
 
-impl std::fmt::Display for Bit {
+impl std::fmt::Display for BitEncoder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} Bit Encoder", self.str())
     }
@@ -76,117 +76,139 @@ impl std::fmt::Display for NumBits {
 struct EpcManager {
     ascii_string: String,
     hex_string: String,
-    bit: combo_box::State<Bit>,
-    selected_bit: Option<Bit>,
+    bit_encoder: combo_box::State<BitEncoder>,
+    selected_bit_encoder: Option<BitEncoder>,
     num_bits: combo_box::State<NumBits>,
     selected_num_bits: Option<NumBits>,
     result_message: String,
-
+    encoder: AsciiEncoderType,
+    ascii_message: String,
+    hex_message: String,
+    ascii_result: StringResult,
+    hex_result: StringResult,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     Encode,
     Decode,
-    SelectedBit(Bit),
+    SelectedBitEncoder(BitEncoder),
     SelectedNumBits(NumBits),
     AsciiChanged(String),
     HexChanged(String),
 }
 
 impl EpcManager {
+
     fn new() -> Self {
         Self {
             ascii_string: String::new(),
             hex_string: String::new(),
-            bit: combo_box::State::new(Bit::ALL.to_vec()),
-            selected_bit: Bit::Eight.into(),
+            bit_encoder: combo_box::State::new(BitEncoder::ALL.to_vec()),
+            selected_bit_encoder: Some( BitEncoder::Eight),
             num_bits: combo_box::State::new(NumBits::ALL.to_vec()),
-            selected_num_bits: NumBits::Bit96.into(),
+            selected_num_bits: Some( NumBits::Bit96),
             result_message: String::new(),
+            encoder: AsciiEncoderType::Eight(EightEncoder::new(96)),
+            ascii_result: StringResult::EmptyString,
+            hex_result: StringResult::EmptyString,
+            ascii_message: StringResult::EmptyString.get_message(),
+            hex_message: StringResult::EmptyString.get_message(),
+
         }
     }
     fn update(&mut self, message: Message) {
         match message {
             Message::Encode => {
-                if !self.selected_bit.is_none() {
-                    let bit = self.selected_num_bits.unwrap().get_num();
-                    let encoder = self.selected_bit.unwrap().get_encode(bit);
-                    let _result = encoder.encode(&self.ascii_string);
-                    dbg!(&_result);
-                    match _result {
-                        ascii_encoder::AsciiResult::OK(hex) => {
-                            self.hex_string = hex;
-                            self.result_message = String::from("OK");
-                        }
-                        ascii_encoder::AsciiResult::OKAdded(hex) => {
-                            self.hex_string = hex;
-                            self.result_message = String::from("Added padding");
-                        }
-                        ascii_encoder::AsciiResult::OKRemoved(hex) => {
-                            self.hex_string = hex;
-                            self.result_message = String::from("Removed text");
-                        }
-                        _ => {}
-                        
+                let _result = self.encoder.encode(&self.ascii_string);
+                dbg!(&_result);
+                match _result {
+                    ascii_encoder::AsciiResult::OK(hex) => {
+                        self.hex_string = hex;
+                        self.result_message = String::from("OK");
                     }
-    
+                    ascii_encoder::AsciiResult::OKAdded(hex) => {
+                        self.hex_string = hex;
+                        self.result_message = String::from("Added padding");
+                    }
+                    ascii_encoder::AsciiResult::OKRemoved(hex) => {
+                        self.hex_string = hex;
+                        self.result_message = String::from("Removed text");
+                    }
+                    _ => {}
+                    
                 }
-                
+                self.hex_result = self.encoder.check_hex(&self.hex_string);
+                self.hex_message = self.hex_result.get_message();
+
             }
             Message::Decode => {
-                if !self.selected_bit.is_none() {
-                    let bit = self.selected_num_bits.unwrap().get_num();
-
-                    let encoder = self.selected_bit.unwrap().get_encode(bit);
-                    let _result = encoder.decode(&self.hex_string);
-                    dbg!(&_result);
-                    match _result {
-                        ascii_encoder::AsciiResult::OK(hex) => {
-                            self.ascii_string = hex;
-                            self.result_message = String::from("OK");
-                        }
-                        ascii_encoder::AsciiResult::OKAdded(hex) => {
-                            self.ascii_string = hex;
-                            self.result_message = String::from("Added space");
-                        }
-                        ascii_encoder::AsciiResult::OKRemoved(hex) => {
-                            self.ascii_string = hex;
-                            self.result_message = String::from("Removed text");
-                        }
-                        ascii_encoder::AsciiResult::OKEnded(hex) => {
-                            self.ascii_string = hex;
-                            self.result_message = String::from("Text Ended ");
-                        }
-                        _ => {}
-                        
+                let _result = self.encoder.decode(&self.hex_string);
+                dbg!(&_result);
+                match _result {
+                    ascii_encoder::AsciiResult::OK(hex) => {
+                        self.ascii_string = hex;
+                        self.result_message = String::from("OK");
                     }
-    
+                    ascii_encoder::AsciiResult::OKAdded(hex) => {
+                        self.ascii_string = hex;
+                        self.result_message = String::from("Added space");
+                    }
+                    ascii_encoder::AsciiResult::OKRemoved(hex) => {
+                        self.ascii_string = hex;
+                        self.result_message = String::from("Removed text");
+                    }
+                    ascii_encoder::AsciiResult::OKEnded(hex) => {
+                        self.ascii_string = hex;
+                        self.result_message = String::from("Text Ended ");
+                    }
+                    _ => {}
+                    
                 }
+                self.ascii_result = self.encoder.check_ascii(&self.ascii_string);
+                self.ascii_message = self.ascii_result.get_message();
 
             }
-            Message::SelectedBit(bit) => {
-                self.selected_bit = Some(bit);
+            Message::SelectedBitEncoder(bit_encoder) => {
+                self.selected_bit_encoder = Some(bit_encoder);
+                self.encoder = bit_encoder.get_encode(self.selected_num_bits.unwrap().get_num());
+                self.ascii_result = self.encoder.check_ascii(&self.ascii_string);
+                self.hex_result = self.encoder.check_hex(&self.hex_string);
+                self.ascii_message = self.ascii_result.get_message();
+                self.hex_message = self.hex_result.get_message();
             }
             Message::AsciiChanged(ascii) => {
                 self.ascii_string = ascii;
+                self.ascii_result = self.encoder.check_ascii(&self.ascii_string);
+                self.hex_result = self.encoder.check_hex(&self.hex_string);
+                self.ascii_message = self.ascii_result.get_message();
+                self.hex_message = self.hex_result.get_message();
             }
             Message::HexChanged(hex) => {
                 self.hex_string = hex;
+                self.ascii_result = self.encoder.check_ascii(&self.ascii_string);
+                self.hex_result = self.encoder.check_hex(&self.hex_string);
+                self.ascii_message = self.ascii_result.get_message();
+                self.hex_message = self.hex_result.get_message();
             }
             Message::SelectedNumBits(num_bits) => {
                 self.selected_num_bits = Some(num_bits);
+                self.encoder = self.selected_bit_encoder.unwrap().get_encode(num_bits.get_num());
+                self.ascii_result = self.encoder.check_ascii(&self.ascii_string);
+                self.hex_result = self.encoder.check_hex(&self.hex_string);
+                self.ascii_message = self.ascii_result.get_message();
+                self.hex_message = self.hex_result.get_message();
             }
         
         }
     }
     fn view(&self) -> iced::Element<Message> {
         let mut encode_button = button("Encode");
-        if !self.ascii_string.is_empty() {
+        if self.ascii_result.is_ok() {
             encode_button =  encode_button.on_press(Message::Encode);
         } 
         let mut decode_button = button("Decode");
-        if !self.hex_string.is_empty() {
+        if self.hex_result.is_ok() {
             decode_button = decode_button.on_press(Message::Decode);
         }
         container(
@@ -198,18 +220,24 @@ impl EpcManager {
                     ].spacing(10),
                 row![
                     Text::new("Eoncoder"),
-                    combo_box(&self.bit, "bit", self.selected_bit.as_ref(),Message::SelectedBit),
+                    combo_box(&self.bit_encoder, "bit", self.selected_bit_encoder.as_ref(),Message::SelectedBitEncoder),
                     ].spacing(10),
                 row![
                     Text::new("ASCII Text"),
                     text_input("ASCII Text", &self.ascii_string).on_input(Message::AsciiChanged),
+                    Text::new(&self.ascii_message),
                 ].spacing(10),
                 row![
                     Text::new("HEX Text"),
                     text_input("HEX Text", &self.hex_string).on_input(Message::HexChanged),
+                    Text::new(&self.hex_message),
                 ].spacing(10),
                 row![encode_button, decode_button].spacing(10),
-                Text::new(&self.result_message)
+                row![
+                    Text::new("Result: "),
+                    Text::new(&self.result_message)
+
+                ].spacing(10)
                 
             ].spacing(10)
         ).padding(10).height(300).width(500)
