@@ -26,15 +26,8 @@ impl AsciiEncoder for SevenEncoder {
         let mut result = String::new();
         let mut counter = 0;
         let mut current = 0;
-        let mut left = 0;
-        let mut right = 0;
         for c in ascii_string.chars() {
             let hex = c as u8;
-            dbg!(hex);
-            dbg!(current);
-            dbg!(counter);
-            dbg!(left);
-            dbg!(right);
             match counter {
                 0 => {
                     current = hex << 1;
@@ -47,8 +40,8 @@ impl AsciiEncoder for SevenEncoder {
                 }
 
                 _ => {
-                    left = hex >> (7-counter);
-                    right = (hex << (counter+1)) & 0xFF;
+                    let left = hex >> (7-counter);
+                    let right = (hex << (counter+1)) & 0xFF;
                     current += left;
                     result.push_str(&format!("{:02X}", current));
                     current = right;
@@ -60,8 +53,6 @@ impl AsciiEncoder for SevenEncoder {
             result.push_str(&format!("{:02X}", current));
         }
         let hexlen = result.len();
-        dbg!(len);
-        dbg!(hexlen);
         let bitcount = self.base.get_bitcount();
         if hexlen * 4 < bitcount {
             result.push_str(&"0".repeat((bitcount - hexlen*4)/4));
@@ -93,8 +84,6 @@ impl AsciiEncoder for SevenEncoder {
         loop {
             let firstc = chars.next();
             let secondc = chars.next();
-            dbg!(&firstc);
-            dbg!(&secondc);
             if firstc.is_none() || secondc.is_none() {
                 break;
             }
@@ -194,7 +183,7 @@ impl AsciiEncoder for SevenEncoder {
         if result != StringResult::OK {
             return result;
         }
-        let len = dbg!( ascii.len() * 7);
+        let len =  ascii.len() * 7;
         let bitcount = self.base.get_bitcount();
         if len > bitcount {
             return StringResult::LongString;
@@ -208,7 +197,7 @@ impl AsciiEncoder for SevenEncoder {
         if result != StringResult::OK {
             return result;
         }
-        let len = dbg!( hex.len() * 4);
+        let len =  hex.len() * 4;
         let bitcount = self.base.get_bitcount();
         if len > bitcount {
             return StringResult::LongString;

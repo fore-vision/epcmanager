@@ -24,14 +24,10 @@ impl AsciiEncoder for EightEncoder {
         }
         let mut result = String::new();
         let bitcount = self.base.get_bitcount();
-        dbg!(bitcount);
         for c in ascii_string.chars() {
             let hex = format!("{:02X}", c as u8);
-            dbg!(c);
-            dbg!(&hex);
             result.push_str(&hex);
         }
-        dbg!(len);
         if len *8 < bitcount {
             result.push_str(&"0".repeat((bitcount - len*8)/4));
             AsciiResult::OKAdded(result)
@@ -58,11 +54,9 @@ impl AsciiEncoder for EightEncoder {
 
         while let Some(c) = chars.next() {
             let hex = format!("{}{}", c, chars.next().unwrap());
-            dbg!(&hex);
             let ubyte = u8::from_str_radix(&hex, 16);
             match ubyte {
                 Ok(byte) => {
-                    dbg!(byte);
                     let ascii = EightEncoder::u8_to_ascii(byte);
                     match ascii {
                         CharResult::OK(c) => {
@@ -84,7 +78,6 @@ impl AsciiEncoder for EightEncoder {
             }
         }
         let bitcount = self.base.get_bitcount();
-        dbg!(bitcount);
         if result.len() * 8 > bitcount {
             return AsciiResult::OKRemoved(result[0..bitcount/8].to_string());
         } else {
@@ -96,10 +89,9 @@ impl AsciiEncoder for EightEncoder {
         if result != StringResult::OK {
             return result;
         }
-        let len = dbg!( ascii.len() * 8);
+        let len = ascii.len() * 8;
         
         let bitcount = self.base.get_bitcount();
-        dbg!(bitcount);
         if len  < bitcount {
             return StringResult::ShortString;
         } else if len == bitcount {
@@ -113,9 +105,8 @@ impl AsciiEncoder for EightEncoder {
         if result != StringResult::OK {
             return result;
         }
-        let len = dbg!( hex.len() * 4);
+        let len = hex.len() * 4;
         let bitcount = self.base.get_bitcount();
-        dbg!(bitcount);
         if len  < bitcount {
             return StringResult::ShortString;
         } else if len == bitcount {

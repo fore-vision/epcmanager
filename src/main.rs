@@ -8,6 +8,8 @@ mod eight_encoder;
 mod seven_encoder;
 mod six_encoder;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Default,Clone,Copy, PartialEq, Eq,Debug)]
 enum BitEncoder {
     Eight,
@@ -121,7 +123,6 @@ impl EpcManager {
         match message {
             Message::Encode => {
                 let _result = self.encoder.encode(&self.ascii_string);
-                dbg!(&_result);
                 match _result {
                     ascii_encoder::AsciiResult::OK(hex) => {
                         self.hex_string = hex;
@@ -144,7 +145,6 @@ impl EpcManager {
             }
             Message::Decode => {
                 let _result = self.encoder.decode(&self.hex_string);
-                dbg!(&_result);
                 match _result {
                     ascii_encoder::AsciiResult::OK(hex) => {
                         self.ascii_string = hex;
@@ -213,7 +213,10 @@ impl EpcManager {
         }
         container(
             column![
-                Text::new("EPC Manager").size(30),
+                row![
+                    Text::new("EPC Manager Version: ").size(20),
+                    Text::new(VERSION).size(20),
+                ].spacing(10),
                 row![
                     Text::new("EPC size"),
                     combo_box(&self.num_bits, "num_bits", self.selected_num_bits.as_ref(),Message::SelectedNumBits) ,

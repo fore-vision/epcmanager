@@ -49,10 +49,6 @@ impl AsciiEncoder for SixEncoder {
         let mut next = 0;
         for c in encode_string.chars() {
             let byte = c as u8;
-            dbg!(byte);
-            dbg!(counter);
-            dbg!(current);
-            dbg!(next);
             let code =if byte > 0x40 {
                 byte - 0x40
             } else {
@@ -67,19 +63,11 @@ impl AsciiEncoder for SixEncoder {
                 }
                 _ => {
                     let first = counter - 2;
-                    dbg!(first);
                     current += code >> first;
-                    dbg!(current);
                     let second = 8-first;
-                    dbg!(second);
                     let mask = ((1<< first) -1) & 0xff;
-                    dbg!(mask);
                     let sub = (mask & code) & 0xff;
-                    dbg!(sub);
                     next = (sub << second) & 0xff;
-
-
-
                 }
                 
             }
@@ -96,9 +84,6 @@ impl AsciiEncoder for SixEncoder {
         if counter > 0 {
             let hex = format!("{:02X}", current);
             result.push_str(&hex);
-            dbg!(&counter);
-            dbg!(hex);
-
         }
         match six_result {
             SixResult::OK => AsciiResult::OK(result),
@@ -136,8 +121,6 @@ impl AsciiEncoder for SixEncoder {
         loop {
             let firstc = chars.next();
             let secondc = chars.next();
-            dbg!(&firstc);
-            dbg!(&secondc);
             if firstc.is_none() || secondc.is_none() {
                 break;
             }
@@ -147,14 +130,10 @@ impl AsciiEncoder for SixEncoder {
                 return AsciiResult::InvalidChar;
             } else {
                 let byte = ubyte.unwrap();
-                dbg!(byte);
-                dbg!(counter);
                 match counter %3 {
                     0 => {
                         let v = (byte  >> 2) & 0x3f;
                         let d = decode_char(v);
-                        dbg!(v);
-                        dbg!(d);
                         match d {
                             32 => {
                                 stop = true;
@@ -162,7 +141,6 @@ impl AsciiEncoder for SixEncoder {
                             33..127 => {
                                 result.push(d as char);
                                 next = (byte & 0x03) << 4;
-                                dbg!(next);
                             }
                             _ => {
                                 return AsciiResult::InvalidChar;
@@ -172,8 +150,6 @@ impl AsciiEncoder for SixEncoder {
                     1 => {
                         let v = ((byte >> 4) & 0x0f) + next;
                         let d = decode_char(v);
-                        dbg!(v);
-                        dbg!(d);
                         match d {
                             32 => {
                                 stop = true;
@@ -181,7 +157,6 @@ impl AsciiEncoder for SixEncoder {
                             33..127 => {
                                 result.push(d as char);
                                 next = (byte & 0x0f) << 2;
-                                dbg!(next);
                             }
                             _ => {
                                 return AsciiResult::InvalidChar;
@@ -191,8 +166,6 @@ impl AsciiEncoder for SixEncoder {
                     _ => {
                         let v = ((byte >> 6) & 0x03) + next;
                         let d = decode_char(v);
-                        dbg!(v);
-                        dbg!(d);
                         match d {
                             32 => {
                                 stop = true;
@@ -201,8 +174,6 @@ impl AsciiEncoder for SixEncoder {
                                 result.push(d as char);
                                 next = byte & 0x3f;
                                 let nd = decode_char(next);
-                                dbg!(nd);
-                                dbg!(next);
                                 match nd {
                                     32 => {
                                         stop = true;
@@ -239,9 +210,8 @@ impl AsciiEncoder for SixEncoder {
         if !re.is_match(ascii) {
             return StringResult::InvalidChar;
         }
-        let len = dbg!( ascii.len() * 6);
+        let len = ascii.len() * 6;
         let bitcount = self.base.get_bitcount();
-        dbg!(bitcount);
         if len > bitcount {
             return StringResult::LongString;
         } else if len < bitcount {
@@ -254,9 +224,8 @@ impl AsciiEncoder for SixEncoder {
         if result != crate::ascii_encoder::StringResult::OK {
             return result;
         }
-        let len = dbg!( hex.len() * 4);
+        let len = hex.len() * 4;
         let bitcount = self.base.get_bitcount();
-        dbg!(bitcount);
         if len > bitcount {
             return StringResult::LongString;
         } else if len < bitcount {
