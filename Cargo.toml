@@ -1,7 +1,13 @@
 [package]
 name = "epcmanager"
+description = "EPC text tool for RFID"
 version = "0.1.0"
 edition = "2021"
+readme = "README.md"
+repository = "https://github.com/fore-vision/epcmanager"
+license = "Apache-2.0"
+keywords = ["EPC", "RFID", "ASCII"]
+categories = ["text-processing","encoding", "compression"]
 
 [dependencies]
 iced = "0.13.1"

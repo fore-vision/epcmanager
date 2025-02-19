@@ -2,9 +2,15 @@
 
 ## Desciption
 
-epcmanager is to change the EPC data of the RFID to other format.
+`epcmanager` is to change the EPC data of the RFID to other format.
+
+Change ASCII String to Hex String.
+Hex String to ASCII String.
 
 ![screen shot](images/screenshot.png)
+
+- EPC size: 64bit, 96bit, 128bit
+- Encoder: 8Bit(Normal), 7Bit(Packed), 6Bit(AlphaNumeric)
 
 ## build
 
@@ -15,6 +21,7 @@ This application is built by RUST.
 this application uses following crates.
 
 - iced
+- regex
 
 ### build
 
