@@ -4,6 +4,8 @@
 
 epcmanager is to change the EPC data of the RFID to other format.
 
+![screen shot](images/screenshot.png)
+
 ## build
 
 This application is built by RUST.
